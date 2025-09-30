@@ -121,14 +121,14 @@ mkdir -p roms
 
 ### Keyboard
 
-| Key | Function |
-|-----|----------|
+| Key        | Function                      |
+| ---------- | ----------------------------- |
 | Arrow Keys | Movement (Up/Down/Left/Right) |
-| Z | Button 1 |
-| X | Button 2 |
-| C | Button 3 |
-| Enter | Start |
-| 5 | Insert Coin |
+| Z          | Button 1                      |
+| X          | Button 2                      |
+| C          | Button 3                      |
+| Enter      | Start                         |
+| 5          | Insert Coin                   |
 
 ### Joystick
 
@@ -141,28 +141,54 @@ mkdir -p roms
 ### Build Issues
 
 **Problem**: CMake can't find SDL3
-```
+
+````
 Solution: Ensure SDL3 is installed and CMAKE_PREFIX_PATH is set
-export CMAKE_PREFIX_PATH=/usr/local  # or your SDL3 install path
+Solution: Ensure SDL3 is installed and CMAKE_PREFIX_PATH is set
+You can point CMake to the bundled `SDL3` folder at the repository root using the workspace variable or a platform-specific command.
+
+For Unix/macOS (bash/zsh):
+```bash
+export CMAKE_PREFIX_PATH=${workspaceFolder}/SDL3  # or the path where SDL3 is installed
+````
+
+For Windows (PowerShell):
+
+```powershell
+$env:CMAKE_PREFIX_PATH = "$PWD\SDL3"
+```
+
+For Windows (cmd.exe):
+
+```cmd
+set CMAKE_PREFIX_PATH=%CD%\SDL3
+```
+
 ```
 
 **Problem**: Compiler errors about C++17
 ```
+
 Solution: Update your compiler or explicitly set the standard:
 cmake .. -DCMAKE_CXX_STANDARD=17
+
 ```
 
 ### Runtime Issues
 
 **Problem**: Missing ROM files
 ```
+
 Solution: Ensure ROM ZIP files are in the roms/ directory
+
 ```
 
 **Problem**: Window doesn't open
 ```
+
 Solution: Check that SDL3 and OpenGL are properly installed
-```
+
+````
 
 ## Running Tests
 
@@ -185,7 +211,7 @@ The project includes several test executables:
 # Test TGP
 ./PixelModel2TGPTest
 ./PixelModel2TGP3DTest
-```
+````
 
 ## Next Steps
 
@@ -221,10 +247,10 @@ cmake --build build --target help
 
 ## Common Game Names
 
-| Game | Command |
-|------|---------|
-| Virtua Fighter 2 | `vf2` |
-| Daytona USA | `daytona` |
+| Game             | Command   |
+| ---------------- | --------- |
+| Virtua Fighter 2 | `vf2`     |
+| Daytona USA      | `daytona` |
 
 **Note**: Game support depends on having the correct ROM files.
 

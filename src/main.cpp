@@ -11,25 +11,26 @@
 #include "tgp.h"
 
 // --- Input System ---
-struct InputState {
+struct InputState
+{
     // Digital inputs (buttons)
     bool start_button = false;
     bool service_button = false;
     bool test_button = false;
     bool coin_button = false;
-    
+
     // Action buttons
     bool button1 = false;
     bool button2 = false;
     bool button3 = false;
     bool button4 = false;
-    
+
     // Directional inputs
     bool up = false;
     bool down = false;
     bool left = false;
     bool right = false;
-    
+
     // Analog inputs (for steering/wheel)
     int16_t steering = 0; // -32768 to 32767
     int16_t throttle = 0; // -32768 to 32767
@@ -38,212 +39,277 @@ struct InputState {
 InputState current_input;
 
 // --- Audio System ---
-struct AudioState {
-    SDL_AudioStream* stream = nullptr;
+struct AudioState
+{
+    SDL_AudioStream *stream = nullptr;
     bool enabled = true;
     float master_volume = 1.0f;
-    
+
     // Sega Model 2 audio channels (simplified)
-    struct {
+    struct
+    {
         bool enabled = false;
         uint16_t frequency = 0;
         uint8_t volume = 0;
         uint8_t waveform = 0; // 0=sine, 1=square, 2=triangle, 3=sawtooth
-    } channels[8]; // 8 audio channels
+    } channels[8];            // 8 audio channels
 };
 
 static AudioState audio_state;
 
-void handle_input_event(const SDL_Event& event) {
-    switch (event.type) {
-        case SDL_EVENT_KEY_DOWN:
-        case SDL_EVENT_KEY_UP: {
-            bool pressed = (event.type == SDL_EVENT_KEY_DOWN);
-            SDL_Keycode key = event.key.key;
-            
-            // Sega Model 2 style controls
-            if (key == SDLK_RETURN) { // Enter = Start
-                current_input.start_button = pressed;
-            } else if (key == SDLK_5) { // 5 = Coin
-                current_input.coin_button = pressed;
-            } else if (key == SDLK_9) { // 9 = Service
-                current_input.service_button = pressed;
-            } else if (key == SDLK_F2) { // F2 = Test
-                current_input.test_button = pressed;
-            } else if (key == SDLK_Z) { // Z = Button 1
-                current_input.button1 = pressed;
-            } else if (key == SDLK_X) { // X = Button 2
-                current_input.button2 = pressed;
-            } else if (key == SDLK_C) { // C = Button 3
-                current_input.button3 = pressed;
-            } else if (key == SDLK_V) { // V = Button 4
-                current_input.button4 = pressed;
-            } else if (key == SDLK_UP) { // Directional controls
-                current_input.up = pressed;
-            } else if (key == SDLK_DOWN) {
-                current_input.down = pressed;
-            } else if (key == SDLK_LEFT) {
-                current_input.left = pressed;
-            } else if (key == SDLK_RIGHT) {
-                current_input.right = pressed;
-            } else if (key == SDLK_A) { // A = Steer left
-                if (pressed) current_input.steering = -16384;
-                else current_input.steering = 0;
-            } else if (key == SDLK_D) { // D = Steer right
-                if (pressed) current_input.steering = 16384;
-                else current_input.steering = 0;
-            } else if (key == SDLK_W) { // W = Accelerate
-                if (pressed) current_input.throttle = 16384;
-                else current_input.throttle = 0;
-            } else if (key == SDLK_S) { // S = Brake
-                if (pressed) current_input.throttle = -16384;
-                else current_input.throttle = 0;
-            }
+void handle_input_event(const SDL_Event &event)
+{
+    switch (event.type)
+    {
+    case SDL_EVENT_KEY_DOWN:
+    case SDL_EVENT_KEY_UP:
+    {
+        bool pressed = (event.type == SDL_EVENT_KEY_DOWN);
+        SDL_Keycode key = event.key.key;
+
+        // Sega Model 2 style controls
+        if (key == SDLK_RETURN)
+        { // Enter = Start
+            current_input.start_button = pressed;
+        }
+        else if (key == SDLK_5)
+        { // 5 = Coin
+            current_input.coin_button = pressed;
+        }
+        else if (key == SDLK_9)
+        { // 9 = Service
+            current_input.service_button = pressed;
+        }
+        else if (key == SDLK_F2)
+        { // F2 = Test
+            current_input.test_button = pressed;
+        }
+        else if (key == SDLK_Z)
+        { // Z = Button 1
+            current_input.button1 = pressed;
+        }
+        else if (key == SDLK_X)
+        { // X = Button 2
+            current_input.button2 = pressed;
+        }
+        else if (key == SDLK_C)
+        { // C = Button 3
+            current_input.button3 = pressed;
+        }
+        else if (key == SDLK_V)
+        { // V = Button 4
+            current_input.button4 = pressed;
+        }
+        else if (key == SDLK_UP)
+        { // Directional controls
+            current_input.up = pressed;
+        }
+        else if (key == SDLK_DOWN)
+        {
+            current_input.down = pressed;
+        }
+        else if (key == SDLK_LEFT)
+        {
+            current_input.left = pressed;
+        }
+        else if (key == SDLK_RIGHT)
+        {
+            current_input.right = pressed;
+        }
+        else if (key == SDLK_A)
+        { // A = Steer left
+            if (pressed)
+                current_input.steering = -16384;
+            else
+                current_input.steering = 0;
+        }
+        else if (key == SDLK_D)
+        { // D = Steer right
+            if (pressed)
+                current_input.steering = 16384;
+            else
+                current_input.steering = 0;
+        }
+        else if (key == SDLK_W)
+        { // W = Accelerate
+            if (pressed)
+                current_input.throttle = 16384;
+            else
+                current_input.throttle = 0;
+        }
+        else if (key == SDLK_S)
+        { // S = Brake
+            if (pressed)
+                current_input.throttle = -16384;
+            else
+                current_input.throttle = 0;
+        }
+        break;
+    }
+
+    case SDL_EVENT_JOYSTICK_ADDED:
+    {
+        SDL_JoystickID joystick_id = event.jdevice.which;
+        SDL_Joystick *joystick = SDL_OpenJoystick(joystick_id);
+        if (joystick)
+        {
+            const char *name = SDL_GetJoystickName(joystick);
+            std::cout << "Joystick connected: " << (name ? name : "Unknown") << std::endl;
+            SDL_CloseJoystick(joystick); // Close immediately since we don't need to keep it open
+        }
+        break;
+    }
+
+    case SDL_EVENT_JOYSTICK_REMOVED:
+    {
+        std::cout << "Joystick disconnected" << std::endl;
+        break;
+    }
+
+    case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+    case SDL_EVENT_JOYSTICK_BUTTON_UP:
+    {
+        bool pressed = (event.type == SDL_EVENT_JOYSTICK_BUTTON_DOWN);
+        int button = event.jbutton.button;
+
+        // Map common joystick buttons to Sega Model 2 controls
+        switch (button)
+        {
+        case 0: // A button
+            current_input.button1 = pressed;
+            break;
+        case 1: // B button
+            current_input.button2 = pressed;
+            break;
+        case 2: // X button
+            current_input.button3 = pressed;
+            break;
+        case 3: // Y button
+            current_input.button4 = pressed;
+            break;
+        case 6: // Back/Select
+            current_input.coin_button = pressed;
+            break;
+        case 7: // Start
+            current_input.start_button = pressed;
             break;
         }
-        
-        case SDL_EVENT_JOYSTICK_ADDED: {
-            SDL_JoystickID joystick_id = event.jdevice.which;
-            SDL_Joystick* joystick = SDL_OpenJoystick(joystick_id);
-            if (joystick) {
-                const char* name = SDL_GetJoystickName(joystick);
-                std::cout << "Joystick connected: " << (name ? name : "Unknown") << std::endl;
-                SDL_CloseJoystick(joystick); // Close immediately since we don't need to keep it open
-            }
-            break;
+        break;
+    }
+
+    case SDL_EVENT_JOYSTICK_HAT_MOTION:
+    {
+        uint8_t hat_value = event.jhat.value;
+        current_input.up = (hat_value & SDL_HAT_UP);
+        current_input.down = (hat_value & SDL_HAT_DOWN);
+        current_input.left = (hat_value & SDL_HAT_LEFT);
+        current_input.right = (hat_value & SDL_HAT_RIGHT);
+        break;
+    }
+
+    case SDL_EVENT_JOYSTICK_AXIS_MOTION:
+    {
+        int axis = event.jaxis.axis;
+        int16_t value = event.jaxis.value;
+
+        // Map analog sticks to steering/throttle
+        if (axis == 0)
+        { // X axis (steering)
+            current_input.steering = value;
         }
-        
-        case SDL_EVENT_JOYSTICK_REMOVED: {
-            std::cout << "Joystick disconnected" << std::endl;
-            break;
+        else if (axis == 1)
+        {                                    // Y axis (throttle)
+            current_input.throttle = -value; // Invert Y axis
         }
-        
-        case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
-        case SDL_EVENT_JOYSTICK_BUTTON_UP: {
-            bool pressed = (event.type == SDL_EVENT_JOYSTICK_BUTTON_DOWN);
-            int button = event.jbutton.button;
-            
-            // Map common joystick buttons to Sega Model 2 controls
-            switch (button) {
-                case 0: // A button
-                    current_input.button1 = pressed;
-                    break;
-                case 1: // B button
-                    current_input.button2 = pressed;
-                    break;
-                case 2: // X button
-                    current_input.button3 = pressed;
-                    break;
-                case 3: // Y button
-                    current_input.button4 = pressed;
-                    break;
-                case 6: // Back/Select
-                    current_input.coin_button = pressed;
-                    break;
-                case 7: // Start
-                    current_input.start_button = pressed;
-                    break;
-            }
-            break;
-        }
-        
-        case SDL_EVENT_JOYSTICK_HAT_MOTION: {
-            uint8_t hat_value = event.jhat.value;
-            current_input.up = (hat_value & SDL_HAT_UP);
-            current_input.down = (hat_value & SDL_HAT_DOWN);
-            current_input.left = (hat_value & SDL_HAT_LEFT);
-            current_input.right = (hat_value & SDL_HAT_RIGHT);
-            break;
-        }
-        
-        case SDL_EVENT_JOYSTICK_AXIS_MOTION: {
-            int axis = event.jaxis.axis;
-            int16_t value = event.jaxis.value;
-            
-            // Map analog sticks to steering/throttle
-            if (axis == 0) { // X axis (steering)
-                current_input.steering = value;
-            } else if (axis == 1) { // Y axis (throttle)
-                current_input.throttle = -value; // Invert Y axis
-            }
-            break;
-        }
+        break;
+    }
     }
 }
 
 // --- Audio Callback ---
-void audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amount, int total_amount) {
+void audio_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount)
+{
     // Generate audio samples for all active channels
     const int sample_rate = 44100;
     const int channels = 2; // Stereo
     const int buffer_size = additional_amount;
-    
+
     static float phase[8] = {0.0f}; // Phase for each channel
-    
-    int16_t* buffer = new int16_t[buffer_size / sizeof(int16_t)];
-    
-    for (int i = 0; i < buffer_size / sizeof(int16_t); i += channels) {
+
+    int16_t *buffer = new int16_t[buffer_size / sizeof(int16_t)];
+
+    for (int i = 0; i < buffer_size / sizeof(int16_t); i += channels)
+    {
         float left_sample = 0.0f;
         float right_sample = 0.0f;
-        
-        for (int ch = 0; ch < 8; ch++) {
-            if (audio_state.channels[ch].enabled && audio_state.channels[ch].frequency > 0) {
+
+        for (int ch = 0; ch < 8; ch++)
+        {
+            if (audio_state.channels[ch].enabled && audio_state.channels[ch].frequency > 0)
+            {
                 float freq = audio_state.channels[ch].frequency;
                 float vol = audio_state.channels[ch].volume / 255.0f;
                 uint8_t waveform = audio_state.channels[ch].waveform;
-                
+
                 // Generate waveform
                 float sample = 0.0f;
-                switch (waveform) {
-                    case 0: // Sine wave
-                        sample = sinf(phase[ch] * 2.0f * (float)M_PI);
-                        break;
-                    case 1: // Square wave
-                        sample = (phase[ch] < 0.5f) ? 1.0f : -1.0f;
-                        break;
-                    case 2: // Triangle wave
-                        sample = (phase[ch] < 0.5f) ? (4.0f * phase[ch] - 1.0f) : (3.0f - 4.0f * phase[ch]);
-                        break;
-                    case 3: // Sawtooth wave
-                        sample = 2.0f * phase[ch] - 1.0f;
-                        break;
+                switch (waveform)
+                {
+                case 0: // Sine wave
+                    sample = sinf(phase[ch] * 2.0f * (float)M_PI);
+                    break;
+                case 1: // Square wave
+                    sample = (phase[ch] < 0.5f) ? 1.0f : -1.0f;
+                    break;
+                case 2: // Triangle wave
+                    sample = (phase[ch] < 0.5f) ? (4.0f * phase[ch] - 1.0f) : (3.0f - 4.0f * phase[ch]);
+                    break;
+                case 3: // Sawtooth wave
+                    sample = 2.0f * phase[ch] - 1.0f;
+                    break;
                 }
-                
+
                 // Mix channels (simple stereo panning)
-                if (ch % 2 == 0) { // Even channels to left
+                if (ch % 2 == 0)
+                { // Even channels to left
                     left_sample += sample * vol;
-                } else { // Odd channels to right
+                }
+                else
+                { // Odd channels to right
                     right_sample += sample * vol;
                 }
-                
+
                 // Update phase
                 phase[ch] += freq / sample_rate;
-                if (phase[ch] >= 1.0f) phase[ch] -= 1.0f;
+                if (phase[ch] >= 1.0f)
+                    phase[ch] -= 1.0f;
             }
         }
-        
+
         // Apply master volume and clamp
         left_sample *= audio_state.master_volume;
         right_sample *= audio_state.master_volume;
-        
+
         left_sample = std::max(-1.0f, std::min(1.0f, left_sample));
         right_sample = std::max(-1.0f, std::min(1.0f, right_sample));
-        
+
         // Convert to 16-bit PCM
         buffer[i] = (int16_t)(left_sample * 32767.0f);
         buffer[i + 1] = (int16_t)(right_sample * 32767.0f);
     }
-    
+
     // Put samples into the audio stream
     SDL_PutAudioStreamData(stream, buffer, buffer_size);
     delete[] buffer;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[])
+{
     std::cout << "Starting Pixel Model 2 Emulator..." << std::endl;
-    
+
     // Show usage if help is requested
-    if (argc > 1 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)) {
+    if (argc > 1 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0))
+    {
         std::cout << "Usage: PixelModel2 <game_name>" << std::endl;
         std::cout << "Available games:" << std::endl;
         std::cout << "  vf2     - Virtua Fighter 2 (ROMs ZIP disponibles)" << std::endl;
@@ -253,11 +319,12 @@ int main(int argc, char* argv[]) {
         std::cout << "A game name must be specified as an argument." << std::endl;
         return 0;
     }
-    
+
     // --- SDL Initialization ---
     std::cout << "Initializing SDL..." << std::endl;
     int sdlInitResult = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
-    if (sdlInitResult < 0) {
+    if (sdlInitResult < 0)
+    {
         std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
         return -1;
     }
@@ -274,14 +341,14 @@ int main(int argc, char* argv[]) {
 
     // --- Window Creation (SDL3 API) ---
     std::cout << "Creating window..." << std::endl;
-    SDL_Window* window = SDL_CreateWindow(
+    SDL_Window *window = SDL_CreateWindow(
         "Pixel Model 2 Emulator",
         496, // Native Model 2 width
         384, // Native Model 2 height
-        SDL_WINDOW_OPENGL
-    );
+        SDL_WINDOW_OPENGL);
 
-    if (!window) {
+    if (!window)
+    {
         std::cerr << "Failed to create window: " << SDL_GetError() << std::endl;
         SDL_Quit();
         return -1;
@@ -291,7 +358,8 @@ int main(int argc, char* argv[]) {
     // --- OpenGL Context ---
     std::cout << "Creating OpenGL context..." << std::endl;
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
-    if (!glContext) {
+    if (!glContext)
+    {
         std::cerr << "Failed to create OpenGL context: " << SDL_GetError() << std::endl;
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -307,9 +375,10 @@ int main(int argc, char* argv[]) {
 
     // Load the game ROMs into memory
     std::cout << "Loading game ROMs..." << std::endl;
-    
+
     // Check if a game name was provided
-    if (argc < 2) {
+    if (argc < 2)
+    {
         std::cerr << "Error: No game specified!" << std::endl;
         std::cerr << "Usage: PixelModel2 <game_name>" << std::endl;
         std::cerr << "Available games: vf2, daytona" << std::endl;
@@ -320,10 +389,14 @@ int main(int argc, char* argv[]) {
         SDL_Quit();
         return -1;
     }
-    
-    const char* game_name = argv[1];
-    
-    if (!load_game_by_name(&bus, game_name, "o:\\PERSO\\pixel-model2\\roms\\")) {
+
+    const char *game_name = argv[1];
+
+    // Use repository-local roms directory by default so the executable works in any clone
+    std::filesystem::path roms_dir = std::filesystem::current_path() / "roms";
+    std::string roms_dir_str = roms_dir.string();
+    if (!load_game_by_name(&bus, game_name, roms_dir_str.c_str()))
+    {
         std::cerr << "Failed to load game ROMs!" << std::endl;
         memory_destroy(&bus);
         return -1;
@@ -336,7 +409,7 @@ int main(int argc, char* argv[]) {
     std::cout << "CPU initialized successfully." << std::endl;
 
     std::cout << "Initializing TGP GPU..." << std::endl;
-    TGP* tgp = new TGP();
+    TGP *tgp = new TGP();
     tgp_init(tgp, &bus);
     std::cout << "TGP initialized successfully." << std::endl;
 
@@ -363,12 +436,17 @@ int main(int argc, char* argv[]) {
     bool running = true;
     int frame_count = 0;
     std::cout << "Starting main emulation loop..." << std::endl;
-    while (running) {
+    while (running)
+    {
         SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) {
+        while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_EVENT_QUIT)
+            {
                 running = false;
-            } else {
+            }
+            else
+            {
                 handle_input_event(event);
             }
         }
@@ -377,7 +455,8 @@ int main(int argc, char* argv[]) {
         i960_step(&cpu);
 
         // Check if CPU is halted
-        if (cpu.halted) {
+        if (cpu.halted)
+        {
             std::cout << "CPU halted. Stopping emulation." << std::endl;
             running = false;
         }
@@ -386,22 +465,37 @@ int main(int argc, char* argv[]) {
         tgp_step(tgp);
 
         // --- Debug: Display active inputs every 60 frames ---
-        if (frame_count % 60 == 0) {
+        if (frame_count % 60 == 0)
+        {
             std::cout << "Input state: ";
-            if (current_input.start_button) std::cout << "START ";
-            if (current_input.service_button) std::cout << "SERVICE ";
-            if (current_input.test_button) std::cout << "TEST ";
-            if (current_input.coin_button) std::cout << "COIN ";
-            if (current_input.button1) std::cout << "B1 ";
-            if (current_input.button2) std::cout << "B2 ";
-            if (current_input.button3) std::cout << "B3 ";
-            if (current_input.button4) std::cout << "B4 ";
-            if (current_input.up) std::cout << "UP ";
-            if (current_input.down) std::cout << "DOWN ";
-            if (current_input.left) std::cout << "LEFT ";
-            if (current_input.right) std::cout << "RIGHT ";
-            if (current_input.steering != 0) std::cout << "STEER:" << current_input.steering << " ";
-            if (current_input.throttle != 0) std::cout << "THROTTLE:" << current_input.throttle << " ";
+            if (current_input.start_button)
+                std::cout << "START ";
+            if (current_input.service_button)
+                std::cout << "SERVICE ";
+            if (current_input.test_button)
+                std::cout << "TEST ";
+            if (current_input.coin_button)
+                std::cout << "COIN ";
+            if (current_input.button1)
+                std::cout << "B1 ";
+            if (current_input.button2)
+                std::cout << "B2 ";
+            if (current_input.button3)
+                std::cout << "B3 ";
+            if (current_input.button4)
+                std::cout << "B4 ";
+            if (current_input.up)
+                std::cout << "UP ";
+            if (current_input.down)
+                std::cout << "DOWN ";
+            if (current_input.left)
+                std::cout << "LEFT ";
+            if (current_input.right)
+                std::cout << "RIGHT ";
+            if (current_input.steering != 0)
+                std::cout << "STEER:" << current_input.steering << " ";
+            if (current_input.throttle != 0)
+                std::cout << "THROTTLE:" << current_input.throttle << " ";
             std::cout << std::endl;
         }
 
@@ -420,12 +514,14 @@ int main(int argc, char* argv[]) {
         SDL_Delay(16);
 
         frame_count++;
-        if (frame_count % 60 == 0) { // Print every second
+        if (frame_count % 60 == 0)
+        { // Print every second
             std::cout << "Frame " << frame_count << " rendered successfully." << std::endl;
         }
-        
+
         // Exit after 5 frames for debugging
-        if (frame_count >= 5) {
+        if (frame_count >= 5)
+        {
             std::cout << "Exiting after 5 frames for debugging." << std::endl;
             running = false;
         }
