@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <cstring>
 #include "i960.h"
 #include "memory.h"
 #include "tgp.h"
