@@ -1,0 +1,110 @@
+# Copilot-readable task list for pixel-model2
+# Generated: 2025-09-30
+# Format: YAML list of tasks with fields id, title, priority, status, owner, files, description, commands
+
+tasks:
+  - id: 1
+    title: Inspecter les fichiers modifiés
+    priority: high
+    status: in-progress
+    owner: "@belugabox"
+    files:
+      - CMakeLists.txt
+      - MINIZ_README.md
+      - src/tgp.cpp
+      - src/main.cpp
+    description: |
+      Vérifier les modifications récentes apportées à ces fichiers pour évaluer les risques, dépendances et points d'attention avant modifications de code.
+    commands:
+      - "git status --porcelain"
+      - "git diff -- CMakeLists.txt src/tgp.cpp src/main.cpp"
+
+  - id: 2
+    title: Lancer build et collecter warnings
+    priority: high
+    status: not-started
+    owner: "@belugabox"
+    files: []
+    description: |
+      Recompiler la solution en Debug|x64 et collecter tous les warnings/erreurs. Produire un fichier `build-warnings.txt` contenant la sortie de compilation.
+    commands:
+      - "mkdir -p build && cd build && cmake .."
+      - "cmake --build . --config Debug -- /m > build-warnings.txt 2>&1"
+
+  - id: 3
+    title: Prioriser corrections
+    priority: medium
+    status: not-started
+    owner: "@belugabox"
+    files: []
+    description: |
+      Analyser la sortie de compilation et prioriser les corrections (sécurité mémoire, allocations fréquentes, conversions signées/unsigned, nettoyage des stubs).
+    commands: []
+
+  - id: 4
+    title: Appliquer corrections ciblées — safe_read_float
+    priority: high
+    status: not-started
+    owner: "@belugabox"
+    files:
+      - include/memory.h
+      - src/memory.cpp
+      - src/tgp.cpp
+    description: |
+      Implémenter une utilité `safe_read_float(MemoryBus*, uint32_t addr)` (memcpy depuis bus->ram vers float local) et remplacer lectures directes via reinterpret_cast dans `src/tgp.cpp` pour éviter aliasing/alignement.
+    commands:
+      - "apply_patch or edit files to add declaration in include/memory.h"
+      - "apply_patch to implement safe_read_float in src/memory.cpp"
+      - "apply_patch to replace direct reinterpret_cast float reads in src/tgp.cpp"
+
+  - id: 5
+    title: Appliquer corrections ciblées — audio buffer
+    priority: medium
+    status: not-started
+    owner: "@belugabox"
+    files:
+      - src/main.cpp
+    description: |
+      Éviter allocations new[]/delete[] dans le callback audio; utiliser un buffer réutilisable (std::vector ou champ dans AudioState) pour réduire allocations et coût runtime.
+    commands: []
+
+  - id: 6
+    title: Corriger conversions et limites (signed/unsigned/overflow)
+    priority: medium
+    status: not-started
+    owner: "@belugabox"
+    files:
+      - src/tgp.cpp
+      - src/memory.cpp
+    description: |
+      Revoir les boucles d'indexation et les calculs d'indice pour utiliser des types cohérents (int32_t/uint32_t/size_t) et ajouter vérifications de bornes pour prévenir overflows.
+    commands: []
+
+  - id: 7
+    title: Gérer ressources SDL sur chemins d'erreur
+    priority: low
+    status: not-started
+    owner: "@belugabox"
+    files:
+      - src/main.cpp
+    description: |
+      S'assurer que tous les chemins d'erreur libèrent correctement la fenêtre et le contexte OpenGL (SDL_DestroyWindow, SDL_GL_DeleteContext, SDL_Quit). Envisager RAII wrappers.
+    commands: []
+
+  - id: 8
+    title: Ajouter tests au CI
+    priority: low
+    status: not-started
+    owner: "@belugabox"
+    files:
+      - .github/workflows/ci.yml
+    description: |
+      Ajouter exécution de `ZipExtractTest` et `LoadMemoryTest` dans pipeline CI (après build) pour détecter régressions sur extraction ROM et chargement mémoire.
+    commands:
+      - "Add job steps to run build and then execute build/Debug/ZipExtractTest.exe and LoadMemoryTest.exe"
+
+metadata:
+  repo: "belugabox/pixel-model2"
+  branch: "main"
+  created_by: "copilot-agent"
+  created_on: "2025-09-30"

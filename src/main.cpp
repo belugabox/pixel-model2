@@ -264,9 +264,13 @@ int main(int argc, char* argv[]) {
     std::cout << "SDL initialized successfully." << std::endl;
 
     // --- OpenGL Attributes ---
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    // Request a compatibility profile (GL 2.1) so legacy immediate-mode
+    // rendering (glBegin/glEnd, glVertex, glColor, glMatrixMode, etc.) works.
+    // The project currently uses immediate-mode calls in tgp.cpp for quick
+    // debugging; switching to modern OpenGL properly would be a larger change.
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 
     // --- Window Creation (SDL3 API) ---
     std::cout << "Creating window..." << std::endl;
