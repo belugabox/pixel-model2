@@ -1,0 +1,14 @@
+# Build artifacts
+build/
+dist/
+*.exe
+*.dll
+*.so
+*.a
+*.lib
+*.o
+*.obj
+
+# IDE files
+.vscode/
+.idea/
