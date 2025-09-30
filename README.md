@@ -1,8 +1,18 @@
 # Pixel Model 2 Emulator
 
+[![CI Build](https://github.com/belugabox/pixel-model2/actions/workflows/ci.yml/badge.svg)](https://github.com/belugabox/pixel-model2/actions/workflows/ci.yml)
+
 ## Overview
 
 Pixel Model 2 is a SEGA Model 2 arcade system emulator, inspired by ElSemi's Model 2 emulator. This project aims to accurately emulate the SEGA Model 2 arcade hardware, which powered popular games like Virtua Fighter 2, Daytona USA, and many others.
+
+## Quick Links
+
+- 📖 **[Quick Start Guide](docs/QUICKSTART.md)** - Get up and running fast
+- 🏗️ **[Architecture Documentation](docs/ARCHITECTURE.md)** - Detailed technical information
+- 🎮 **[About ElSemi's Emulator](docs/ELSEMI.md)** - Learn about the inspiration
+- 🤝 **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
+- 📦 **[Miniz Documentation](MINIZ_README.md)** - About the ZIP library
 
 ## About SEGA Model 2
 
@@ -197,6 +207,16 @@ To add support for a new SEGA Model 2 game:
 3. Add the game to the `available_games` array
 4. Place the game's ZIP file in the `roms/` directory
 
+## Documentation
+
+This project includes extensive documentation:
+
+- **[Quick Start Guide](docs/QUICKSTART.md)**: Step-by-step setup instructions
+- **[Architecture Documentation](docs/ARCHITECTURE.md)**: Detailed technical specifications
+- **[ElSemi's Emulator](docs/ELSEMI.md)**: History and inspiration
+- **[Contributing Guide](CONTRIBUTING.md)**: How to contribute to the project
+- **[Miniz Library](MINIZ_README.md)**: ZIP extraction implementation details
+
 ## References
 
 - [ElSemi's Model 2 Emulator](http://nebula.emulatronia.com/)
@@ -205,7 +225,9 @@ To add support for a new SEGA Model 2 game:
 
 ## Contributing
 
-Contributions are welcome! Areas that need work:
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
+
+Areas that need work:
 
 - Additional game support and ROM configurations
 - Improved CPU accuracy and timing
