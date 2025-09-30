@@ -129,9 +129,46 @@ add_executable(PixelModel2TGP3DTest
 
 # --- Linking ---
 if(SDL3_FOUND)
-    target_link_libraries(PixelModel2 PRIVATE 
-        SDL3::SDL3
-    )
+    if(TARGET SDL3::SDL3)
+        target_link_libraries(PixelModel2 PRIVATE SDL3::SDL3)
+    else()
+        # Fallbacks for SDKs that provide SDL3 headers/libs but not CMake imported targets
+        set(_linked FALSE)
+        if(DEFINED SDL3_LIBRARIES)
+            # SDL3_LIBRARIES may contain imported-target names (e.g. "SDL3::SDL3") or file paths.
+            foreach(_sdl_lib IN LISTS SDL3_LIBRARIES)
+                if(TARGET ${_sdl_lib})
+                    target_link_libraries(PixelModel2 PRIVATE ${_sdl_lib})
+                    set(_linked TRUE)
+                elseif(EXISTS "${_sdl_lib}")
+                    target_link_libraries(PixelModel2 PRIVATE "${_sdl_lib}")
+                    set(_linked TRUE)
+                endif()
+            endforeach()
+        endif()
+        if(NOT _linked AND DEFINED SDL3_LIBRARY)
+            if(TARGET ${SDL3_LIBRARY})
+                target_link_libraries(PixelModel2 PRIVATE ${SDL3_LIBRARY})
+                set(_linked TRUE)
+            elseif(EXISTS "${SDL3_LIBRARY}")
+                target_link_libraries(PixelModel2 PRIVATE "${SDL3_LIBRARY}")
+                set(_linked TRUE)
+            endif()
+        endif()
+        if(NOT _linked)
+            # Try linking the MSVC import library from common vendor locations as a last resort
+            if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vendor/SDL3/lib/x64/SDL3.lib")
+                target_link_libraries(PixelModel2 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/vendor/SDL3/lib/x64/SDL3.lib")
+                set(_linked TRUE)
+            elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/SDL3/lib/x64/SDL3.lib")
+                target_link_libraries(PixelModel2 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SDL3/lib/x64/SDL3.lib")
+                set(_linked TRUE)
+            endif()
+        endif()
+        if(NOT _linked)
+            message(FATAL_ERROR "SDL3 was detected but no usable target, imported target, or library file was found. Please install SDL3 dev files or adjust CMAKE_PREFIX_PATH.")
+        endif()
+    endif()
     if(OPENGL_FOUND)
         target_link_libraries(PixelModel2 PRIVATE OpenGL::GL)
     elseif(WIN32)
@@ -171,6 +208,20 @@ if(SDL3_FOUND)
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${SDL3_INCLUDE_DIRS}
     )
+endif()
+
+# If SDL3::Headers target was created by the SDL3 package, also add it as an interface include.
+if(SDL3_FOUND)
+    if(TARGET SDL3::Headers)
+        target_include_directories(PixelModel2 PRIVATE $<TARGET_PROPERTY:SDL3::Headers,INTERFACE_INCLUDE_DIRECTORIES>)
+    else()
+        # Fallback include paths - common locations inside this repo or vendor folder
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/SDL3/include/SDL3")
+            target_include_directories(PixelModel2 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/SDL3/include")
+        elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vendor/SDL3/include/SDL3")
+            target_include_directories(PixelModel2 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/vendor/SDL3/include")
+        endif()
+    endif()
 endif()
 
 target_include_directories(PixelModel2Test PRIVATE 
