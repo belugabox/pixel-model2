@@ -242,6 +242,18 @@ void audio_callback(void* userdata, SDL_AudioStream* stream, int additional_amou
 int main(int argc, char* argv[]) {
     std::cout << "Starting Pixel Model 2 Emulator..." << std::endl;
     
+    // Show usage if help is requested
+    if (argc > 1 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)) {
+        std::cout << "Usage: PixelModel2 <game_name>" << std::endl;
+        std::cout << "Available games:" << std::endl;
+        std::cout << "  vf3     - Virtua Fighter 3 (ROMs ZIP disponibles)" << std::endl;
+        std::cout << "  daytona - Daytona USA (ROMs ZIP présentes mais incompatibles)" << std::endl;
+        std::cout << "ROM loading: Only ZIP files in roms/ folder are supported." << std::endl;
+        std::cout << "Note: Daytona ROMs need configuration update to match ZIP contents." << std::endl;
+        std::cout << "A game name must be specified as an argument." << std::endl;
+        return 0;
+    }
+    
     // --- SDL Initialization ---
     std::cout << "Initializing SDL..." << std::endl;
     int sdlInitResult = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
@@ -291,7 +303,23 @@ int main(int argc, char* argv[]) {
 
     // Load the game ROMs into memory
     std::cout << "Loading game ROMs..." << std::endl;
-    if (!load_game_by_name(&bus, "vf3", "../../vcop2")) {
+    
+    // Check if a game name was provided
+    if (argc < 2) {
+        std::cerr << "Error: No game specified!" << std::endl;
+        std::cerr << "Usage: PixelModel2 <game_name>" << std::endl;
+        std::cerr << "Available games: vf3, daytona" << std::endl;
+        std::cerr << "Use --help for more information." << std::endl;
+        memory_destroy(&bus);
+        SDL_GL_DestroyContext(glContext);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return -1;
+    }
+    
+    const char* game_name = argv[1];
+    
+    if (!load_game_by_name(&bus, game_name, "../../vcop2")) {
         std::cerr << "Failed to load game ROMs!" << std::endl;
         memory_destroy(&bus);
         return -1;

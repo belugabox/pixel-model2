@@ -1,6 +1,7 @@
 # Build artifacts
 build/
 dist/
+roms/
 *.exe
 *.dll
 *.so
@@ -8,6 +9,7 @@ dist/
 *.lib
 *.o
 *.obj
+*.pdb
 
 # IDE files
 .vscode/

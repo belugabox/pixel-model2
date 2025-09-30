@@ -12,7 +12,8 @@
 			"iostream": "cpp",
 			"stdexcept": "cpp",
 			"iomanip": "cpp",
-			"fstream": "cpp"
+			"fstream": "cpp",
+			"algorithm": "cpp"
 		},
 		"chat.tools.terminal.autoApprove": {
 			"/.*/": true,

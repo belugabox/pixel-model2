@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <string>
 #include <cstring>
+#include <cstdlib>  // for system()
 
 void memory_init(MemoryBus* bus) {
     bus->ram = new uint8_t[MEMORY_SIZE];
@@ -206,6 +207,52 @@ bool load_rom_from_file(MemoryBus* bus, const char* filepath, uint32_t offset) {
     return false;
 }
 
+// Extract a file from ZIP archive to a temporary location and load it
+bool load_rom_from_zip(MemoryBus* bus, const char* zip_path, const char* filename, uint32_t offset) {
+    // Create a temporary directory for extraction
+    std::string temp_dir = std::filesystem::temp_directory_path().string() + "/pixelmodel2_temp/";
+    try {
+        std::filesystem::create_directories(temp_dir);
+    } catch (const std::exception& e) {
+        std::cerr << "Error: Could not create temp directory: " << e.what() << std::endl;
+        return false;
+    }
+
+    // Use PowerShell to extract the entire ZIP to temp directory
+    std::string powershell_cmd = "powershell -Command \"Expand-Archive -Path '" + std::string(zip_path) + "' -DestinationPath '" + temp_dir + "' -Force\"";
+    
+    int result = system(powershell_cmd.c_str());
+    if (result != 0) {
+        std::cerr << "Error: Failed to extract ZIP file: " << zip_path << std::endl;
+        try {
+            std::filesystem::remove_all(temp_dir);
+        } catch (...) {}
+        return false;
+    }
+
+    // Check if the file was extracted
+    std::string extracted_file = temp_dir + filename;
+    if (!std::filesystem::exists(extracted_file)) {
+        std::cerr << "Error: File not found after extraction: " << filename << std::endl;
+        try {
+            std::filesystem::remove_all(temp_dir);
+        } catch (...) {}
+        return false;
+    }
+
+    // Now load the extracted file
+    bool load_result = load_rom_from_file(bus, extracted_file.c_str(), offset);
+
+    // Clean up temporary directory
+    try {
+        std::filesystem::remove_all(temp_dir);
+    } catch (const std::exception& e) {
+        std::cerr << "Warning: Could not clean up temp directory: " << e.what() << std::endl;
+    }
+
+    return load_result;
+}
+
 void memory_connect_tgp(MemoryBus* bus, TGP* tgp) {
     bus->tgp = tgp;
     std::cout << "TGP connected to memory bus at address 0x" << std::hex << TGP_BASE_ADDRESS << std::endl;
@@ -246,15 +293,32 @@ static GameConfig available_games[] = {
 bool load_game_roms(MemoryBus* bus, const GameConfig* config, const char* rom_directory) {
     std::cout << "Loading game: " << config->name << std::endl;
     
+    // Map game names to ZIP filenames
+    std::string zip_filename;
+    if (strcmp(config->name, "vf3") == 0) {
+        zip_filename = "vcop2.zip";
+    } else if (strcmp(config->name, "daytona") == 0) {
+        zip_filename = "daytona.zip";
+    } else {
+        // Default: use game name + .zip
+        zip_filename = std::string(config->name) + ".zip";
+    }
+    
     for (int i = 0; i < config->num_roms; i++) {
         const RomFile* rom = &config->roms[i];
         
-        // Build full path
-        std::string filepath = std::string(rom_directory) + "/" + rom->filename;
+        // Load from ZIP file only (roms/ directory)
+        std::string zip_path = std::string(rom_directory) + "/../roms/" + zip_filename;
+        bool loaded = false;
         
-        std::cout << "Loading ROM: " << rom->filename << " at offset 0x" << std::hex << rom->offset << std::endl;
+        if (std::filesystem::exists(zip_path)) {
+            std::cout << "Loading ROM: " << rom->filename << " from ZIP at offset 0x" << std::hex << rom->offset << std::endl;
+            loaded = load_rom_from_zip(bus, zip_path.c_str(), rom->filename, rom->offset);
+        } else {
+            std::cerr << "Error: ZIP file not found: " << zip_path << std::endl;
+        }
         
-        if (!load_rom_from_file(bus, filepath.c_str(), rom->offset)) {
+        if (!loaded) {
             std::cerr << "Failed to load ROM: " << rom->filename << std::endl;
             return false;
         }
