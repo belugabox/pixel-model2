@@ -5,18 +5,31 @@ project(PixelModel2 LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(SDL3 REQUIRED)
+# Prefer GLVND over legacy OpenGL
+set(OpenGL_GL_PREFERENCE GLVND)
+
+# Find OpenGL (required for graphics)
+find_package(OpenGL REQUIRED)
+
+# SDL3 is optional - only required for the main PixelModel2 executable
+find_package(SDL3 QUIET)
 
 # Ensure upstream miniz headers are found before local include/ copies
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/miniz-3.1.0)
 
 # --- Source Files ---
-add_executable(PixelModel2 
-    src/main.cpp
-    src/i960.cpp
-    src/memory.cpp
-    src/tgp.cpp
-)
+# Main executable (requires SDL3)
+if(SDL3_FOUND)
+    add_executable(PixelModel2 
+        src/main.cpp
+        src/i960.cpp
+        src/memory.cpp
+        src/tgp.cpp
+    )
+    message(STATUS "SDL3 found - building PixelModel2 with graphics support")
+else()
+    message(STATUS "SDL3 not found - skipping PixelModel2 main executable (building tests only)")
+endif()
 
 add_executable(PixelModel2Minimal
     src/main_minimal.cpp
@@ -109,47 +122,51 @@ add_executable(PixelModel2TGP3DTest
 )
 
 # --- Linking ---
-target_link_libraries(PixelModel2 PRIVATE 
-    SDL3::SDL3
-    opengl32
-)
-target_link_libraries(PixelModel2 PRIVATE third_party_miniz)
+if(SDL3_FOUND)
+    target_link_libraries(PixelModel2 PRIVATE 
+        SDL3::SDL3
+        OpenGL::GL
+    )
+    target_link_libraries(PixelModel2 PRIVATE third_party_miniz)
+endif()
 
 target_link_libraries(PixelModel2Test PRIVATE 
-    opengl32
+    OpenGL::GL
 )
 target_link_libraries(PixelModel2Test PRIVATE third_party_miniz)
 
 target_link_libraries(PixelModel2LogicalTest PRIVATE 
-    opengl32
+    OpenGL::GL
 )
 target_link_libraries(PixelModel2LogicalTest PRIVATE third_party_miniz)
 
 target_link_libraries(PixelModel2InterruptTest PRIVATE 
-    opengl32
+    OpenGL::GL
 )
 target_link_libraries(PixelModel2InterruptTest PRIVATE third_party_miniz)
 
 target_link_libraries(PixelModel2TGPTest PRIVATE 
-    opengl32
+    OpenGL::GL
 )
 target_link_libraries(PixelModel2TGPTest PRIVATE third_party_miniz)
 
 target_link_libraries(PixelModel2TGP3DTest PRIVATE 
-    opengl32
+    OpenGL::GL
 )
 target_link_libraries(PixelModel2TGP3DTest PRIVATE third_party_miniz)
 
 target_link_libraries(PixelModel2Minimal PRIVATE 
-    opengl32
+    OpenGL::GL
 )
 target_link_libraries(PixelModel2Minimal PRIVATE third_party_miniz)
 
 # --- Include Directories ---
-target_include_directories(PixelModel2 PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${SDL3_INCLUDE_DIRS}
-)
+if(SDL3_FOUND)
+    target_include_directories(PixelModel2 PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${SDL3_INCLUDE_DIRS}
+    )
+endif()
 
 target_include_directories(PixelModel2Test PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include

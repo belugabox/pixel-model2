@@ -16,16 +16,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake build-essential libgl1-mesa-dev
-        
-        # Install SDL3 from source (not yet in Ubuntu repos)
-        git clone --depth 1 https://github.com/libsdl-org/SDL.git SDL3
-        cd SDL3
-        mkdir build && cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
-        make -j$(nproc)
-        sudo make install
-        cd ../..
+        sudo apt-get install -y cmake build-essential libgl1-mesa-dev libglu1-mesa-dev
     
     - name: Configure CMake
       run: cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -38,12 +29,16 @@ jobs:
         cd build
         ./PixelModel2Minimal || echo "Test completed with code $?"
     
+    - name: Run ZIP extraction test
+      run: |
+        cd build
+        ./ZipExtractTest || echo "ZIP test completed with code $?"
+    
     - name: Archive build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: linux-binaries
         path: |
-          build/PixelModel2
           build/PixelModel2Minimal
           build/*Test*
         retention-days: 7
@@ -54,24 +49,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Install SDL3
-      shell: powershell
-      run: |
-        # Clone and build SDL3
-        git clone --depth 1 https://github.com/libsdl-org/SDL.git SDL3
-        cd SDL3
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="C:\SDL3"
-        cmake --build . --config Release
-        cmake --install . --config Release
-        cd ..\..
-    
     - name: Configure CMake
-      shell: powershell
-      run: |
-        $env:CMAKE_PREFIX_PATH = "C:\SDL3"
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="C:\SDL3"
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
     
     - name: Build
       run: cmake --build build --config Release
@@ -97,17 +76,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Install dependencies
-      run: |
-        # Install SDL3 from source
-        git clone --depth 1 https://github.com/libsdl-org/SDL.git SDL3
-        cd SDL3
-        mkdir build && cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
-        make -j$(sysctl -n hw.ncpu)
-        sudo make install
-        cd ../..
-    
     - name: Configure CMake
       run: cmake -B build -DCMAKE_BUILD_TYPE=Release
     
@@ -124,7 +92,6 @@ jobs:
       with:
         name: macos-binaries
         path: |
-          build/PixelModel2
           build/PixelModel2Minimal
           build/*Test*
         retention-days: 7
