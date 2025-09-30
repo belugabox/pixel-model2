@@ -2,6 +2,7 @@
 build/
 dist/
 roms/
+metadata/
 *.exe
 *.dll
 *.so

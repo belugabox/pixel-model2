@@ -17,9 +17,11 @@ struct Vertex {
     float u, v;           // Texture coordinates
 };
 
+#include <vector>
+
 // Triangle structure
 struct Triangle {
-    Vertex vertices[3];
+    Vertex v1, v2, v3;
 };
 
 // TGP command types
@@ -63,6 +65,9 @@ struct TGP {
     // Framebuffer (simplified - in real Model 2 this would be much more complex)
     uint32_t framebuffer[496 * 384]; // RGBA pixels
     float depth_buffer[496 * 384];    // Depth values
+
+    // Triangle list for rendering
+    std::vector<Triangle> triangles;
 };
 
 // Initialize TGP
@@ -114,6 +119,9 @@ void tgp_matrix_rotate_z(float matrix[16], float angle);
 
 // OpenGL rendering functions
 void tgp_render_to_opengl(TGP* tgp);
+
+// Test/debugging functions
+void tgp_add_test_triangles(TGP* tgp);
 
 // Utility functions for vertex transformation and rasterization
 void tgp_transform_vertex(Vertex* v, const float matrix[16]);

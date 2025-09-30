@@ -28,7 +28,12 @@ void tgp_init(TGP* tgp, MemoryBus* bus) {
 
     // Initialize state
     tgp->busy = false;
-    tgp->current_command = 0;
+      // Add a simple colored triangle in the center - make it much larger
+    Triangle tri1;
+    tri1.v1 = {100.0f, 100.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f}; // Red - top left
+    tri1.v2 = {400.0f, 100.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f}; // Green - top right
+    tri1.v3 = {250.0f, 300.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.5f, 1.0f}; // Blue - bottom center
+    tgp->triangles.push_back(tri1);
     tgp->bus = bus;
 
     // Initialize viewport (Model 2 native resolution)
@@ -47,6 +52,12 @@ void tgp_init(TGP* tgp, MemoryBus* bus) {
     for (int i = 0; i < 496 * 384; i++) {
         tgp->depth_buffer[i] = 1.0f; // Far plane
     }
+
+    // Clear triangle list
+    tgp->triangles.clear();
+
+    // Add some test triangles for debugging
+    tgp_add_test_triangles(tgp);
 
     std::cout << "TGP initialized successfully." << std::endl;
 }
@@ -350,15 +361,37 @@ void tgp_draw_triangle(TGP* tgp, uint32_t vertex_addr) {
         uint32_t base_addr = vertex_addr + (i * 9 * 4); // 9 floats per vertex
 
         // Read vertex data (simplified - in real Model 2 this would be more complex)
-        triangle.vertices[i].x = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr]);
-        triangle.vertices[i].y = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 4]);
-        triangle.vertices[i].z = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 8]);
-        triangle.vertices[i].r = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 12]);
-        triangle.vertices[i].g = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 16]);
-        triangle.vertices[i].b = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 20]);
-        triangle.vertices[i].a = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 24]);
-        triangle.vertices[i].u = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 28]);
-        triangle.vertices[i].v = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 32]);
+        if (i == 0) {
+            triangle.v1.x = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr]);
+            triangle.v1.y = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 4]);
+            triangle.v1.z = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 8]);
+            triangle.v1.r = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 12]);
+            triangle.v1.g = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 16]);
+            triangle.v1.b = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 20]);
+            triangle.v1.a = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 24]);
+            triangle.v1.u = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 28]);
+            triangle.v1.v = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 32]);
+        } else if (i == 1) {
+            triangle.v2.x = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr]);
+            triangle.v2.y = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 4]);
+            triangle.v2.z = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 8]);
+            triangle.v2.r = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 12]);
+            triangle.v2.g = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 16]);
+            triangle.v2.b = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 20]);
+            triangle.v2.a = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 24]);
+            triangle.v2.u = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 28]);
+            triangle.v2.v = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 32]);
+        } else if (i == 2) {
+            triangle.v3.x = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr]);
+            triangle.v3.y = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 4]);
+            triangle.v3.z = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 8]);
+            triangle.v3.r = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 12]);
+            triangle.v3.g = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 16]);
+            triangle.v3.b = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 20]);
+            triangle.v3.a = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 24]);
+            triangle.v3.u = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 28]);
+            triangle.v3.v = *reinterpret_cast<float*>(&tgp->bus->ram[base_addr + 32]);
+        }
     }
 
     // Process the triangle through the 3D pipeline
@@ -376,9 +409,9 @@ void tgp_set_matrix(TGP* tgp, uint32_t matrix_addr) {
 
 // Helper function: Check if point is inside triangle using barycentric coordinates
 static bool tgp_is_point_in_triangle(float px, float py, const Triangle& triangle) {
-    const Vertex& v0 = triangle.vertices[0];
-    const Vertex& v1 = triangle.vertices[1];
-    const Vertex& v2 = triangle.vertices[2];
+    const Vertex& v0 = triangle.v1;
+    const Vertex& v1 = triangle.v2;
+    const Vertex& v2 = triangle.v3;
 
     // Compute barycentric coordinates
     float denom = (v1.y - v2.y) * (v0.x - v2.x) + (v2.x - v1.x) * (v0.y - v2.y);
@@ -395,9 +428,9 @@ static bool tgp_is_point_in_triangle(float px, float py, const Triangle& triangl
 
 // Helper function: Interpolate depth using barycentric coordinates
 static float tgp_interpolate_depth(float px, float py, const Triangle& triangle) {
-    const Vertex& v0 = triangle.vertices[0];
-    const Vertex& v1 = triangle.vertices[1];
-    const Vertex& v2 = triangle.vertices[2];
+    const Vertex& v0 = triangle.v1;
+    const Vertex& v1 = triangle.v2;
+    const Vertex& v2 = triangle.v3;
 
     // Compute barycentric coordinates
     float denom = (v1.y - v2.y) * (v0.x - v2.x) + (v2.x - v1.x) * (v0.y - v2.y);
@@ -413,9 +446,9 @@ static float tgp_interpolate_depth(float px, float py, const Triangle& triangle)
 // Helper function: Interpolate vertex attribute using barycentric coordinates
 static float tgp_interpolate_attribute(float px, float py, const Triangle& triangle,
                                       float attr0, float attr1, float attr2) {
-    const Vertex& v0 = triangle.vertices[0];
-    const Vertex& v1 = triangle.vertices[1];
-    const Vertex& v2 = triangle.vertices[2];
+    const Vertex& v0 = triangle.v1;
+    const Vertex& v1 = triangle.v2;
+    const Vertex& v2 = triangle.v3;
 
     // Compute barycentric coordinates
     float denom = (v1.y - v2.y) * (v0.x - v2.x) + (v2.x - v1.x) * (v0.y - v2.y);
@@ -434,9 +467,9 @@ void tgp_render_triangle(TGP* tgp, const Triangle& triangle) {
     Triangle transformed_triangle = triangle;
 
     // Transform vertices
-    for (int i = 0; i < 3; i++) {
-        tgp_transform_vertex(tgp, transformed_triangle.vertices[i]);
-    }
+    tgp_transform_vertex(tgp, transformed_triangle.v1);
+    tgp_transform_vertex(tgp, transformed_triangle.v2);
+    tgp_transform_vertex(tgp, transformed_triangle.v3);
 
     // Clip triangle against view frustum
     if (!tgp_clip_triangle(tgp, transformed_triangle)) {
@@ -485,20 +518,21 @@ bool tgp_clip_triangle(TGP* tgp, Triangle& triangle) {
     // Simple clipping against near/far planes and viewport bounds
     // In a real implementation, this would be more sophisticated
 
-    for (int i = 0; i < 3; i++) {
-        // Clip against near plane (z < -1)
-        if (triangle.vertices[i].z < -1.0f) {
-            return false;
-        }
-        // Clip against far plane (z > 1)
-        if (triangle.vertices[i].z > 1.0f) {
-            return false;
-        }
-        // Clip against viewport
-        if (triangle.vertices[i].x < 0 || triangle.vertices[i].x >= tgp->viewport_width ||
-            triangle.vertices[i].y < 0 || triangle.vertices[i].y >= tgp->viewport_height) {
-            return false;
-        }
+    // Check each vertex
+    if (triangle.v1.z < -1.0f || triangle.v1.z > 1.0f ||
+        triangle.v1.x < 0 || triangle.v1.x >= tgp->viewport_width ||
+        triangle.v1.y < 0 || triangle.v1.y >= tgp->viewport_height) {
+        return false;
+    }
+    if (triangle.v2.z < -1.0f || triangle.v2.z > 1.0f ||
+        triangle.v2.x < 0 || triangle.v2.x >= tgp->viewport_width ||
+        triangle.v2.y < 0 || triangle.v2.y >= tgp->viewport_height) {
+        return false;
+    }
+    if (triangle.v3.z < -1.0f || triangle.v3.z > 1.0f ||
+        triangle.v3.x < 0 || triangle.v3.x >= tgp->viewport_width ||
+        triangle.v3.y < 0 || triangle.v3.y >= tgp->viewport_height) {
+        return false;
     }
 
     return true;
@@ -507,10 +541,10 @@ bool tgp_clip_triangle(TGP* tgp, Triangle& triangle) {
 void tgp_rasterize_triangle(TGP* tgp, const Triangle& triangle) {
     // Simple triangle rasterization using barycentric coordinates
     // Find bounding box
-    float min_x = std::min({triangle.vertices[0].x, triangle.vertices[1].x, triangle.vertices[2].x});
-    float max_x = std::max({triangle.vertices[0].x, triangle.vertices[1].x, triangle.vertices[2].x});
-    float min_y = std::min({triangle.vertices[0].y, triangle.vertices[1].y, triangle.vertices[2].y});
-    float max_y = std::max({triangle.vertices[0].y, triangle.vertices[1].y, triangle.vertices[2].y});
+    float min_x = std::min({triangle.v1.x, triangle.v2.x, triangle.v3.x});
+    float max_x = std::max({triangle.v1.x, triangle.v2.x, triangle.v3.x});
+    float min_y = std::min({triangle.v1.y, triangle.v2.y, triangle.v3.y});
+    float max_y = std::max({triangle.v1.y, triangle.v2.y, triangle.v3.y});
 
     // Clamp to viewport
     min_x = std::max(min_x, 0.0f);
@@ -528,17 +562,17 @@ void tgp_rasterize_triangle(TGP* tgp, const Triangle& triangle) {
 
                 // Interpolate color
                 float r = tgp_interpolate_attribute(x + 0.5f, y + 0.5f, triangle,
-                    triangle.vertices[0].r, triangle.vertices[1].r, triangle.vertices[2].r);
+                    triangle.v1.r, triangle.v2.r, triangle.v3.r);
                 float g = tgp_interpolate_attribute(x + 0.5f, y + 0.5f, triangle,
-                    triangle.vertices[0].g, triangle.vertices[1].g, triangle.vertices[2].g);
+                    triangle.v1.g, triangle.v2.g, triangle.v3.g);
                 float b = tgp_interpolate_attribute(x + 0.5f, y + 0.5f, triangle,
-                    triangle.vertices[0].b, triangle.vertices[1].b, triangle.vertices[2].b);
+                    triangle.v1.b, triangle.v2.b, triangle.v3.b);
 
                 // Convert to 32-bit RGBA
                 uint32_t color = (static_cast<uint32_t>(r * 255) << 24) |
                                 (static_cast<uint32_t>(g * 255) << 16) |
                                 (static_cast<uint32_t>(b * 255) << 8) |
-                                static_cast<uint32_t>(triangle.vertices[0].a * 255);
+                                static_cast<uint32_t>(triangle.v1.a * 255);
 
                 // Draw pixel with depth test
                 tgp_draw_pixel(tgp, x, y, depth, color);
@@ -626,35 +660,94 @@ void tgp_matrix_rotate_z(float matrix[16], float angle) {
 // OpenGL Rendering
 
 void tgp_render_to_opengl(TGP* tgp) {
-    // Render the TGP framebuffer to OpenGL
-    glViewport(0, 0, tgp->viewport_width, tgp->viewport_height);
+    std::cout << "TGP render: " << tgp->triangles.size() << " triangles to render" << std::endl;
+    
+    // Set up viewport and projection for Model 2 native resolution
+    glViewport(0, 0, 496, 384);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, tgp->viewport_width, tgp->viewport_height, 0, -1, 1);
+    glOrtho(0, 496, 384, 0, -1, 1);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glDisable(GL_DEPTH_TEST);
+    // Enable basic features for 3D rendering
+    glDisable(GL_DEPTH_TEST); // We'll handle depth in software for now
     glDisable(GL_TEXTURE_2D);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_BLEND);
 
-    // Draw pixels from framebuffer
-    glBegin(GL_POINTS);
-    for (size_t y = 0; y < tgp->viewport_height; y++) {
-        for (size_t x = 0; x < tgp->viewport_width; x++) {
-            int index = y * tgp->viewport_width + x;
-            uint32_t color = tgp->framebuffer[index];
+    // Clear screen with dark blue background (typical Model 2 background)
+    // std::cout << "TGP: Clearing screen with red color" << std::endl;
+    // glClearColor(1.0f, 0.0f, 0.0f, 1.0f); // Red background for testing
+    // glClear(GL_COLOR_BUFFER_BIT);
 
-            if (color != 0) { // Only draw non-black pixels
-                float r = ((color >> 24) & 0xFF) / 255.0f;
-                float g = ((color >> 16) & 0xFF) / 255.0f;
-                float b = ((color >> 8) & 0xFF) / 255.0f;
-                float a = (color & 0xFF) / 255.0f;
+    // Render triangles from the triangle list instead of individual pixels
+    if (!tgp->triangles.empty()) {
+        std::cout << "Rendering " << tgp->triangles.size() << " triangles" << std::endl;
+        glBegin(GL_TRIANGLES);
+        for (const auto& triangle : tgp->triangles) {
+            // Vertex 1
+            glColor3f(triangle.v1.r, triangle.v1.g, triangle.v1.b);
+            glVertex2f(triangle.v1.x, triangle.v1.y);
 
-                glColor4f(r, g, b, a);
-                glVertex2i(x, y);
+            // Vertex 2
+            glColor3f(triangle.v2.r, triangle.v2.g, triangle.v2.b);
+            glVertex2f(triangle.v2.x, triangle.v2.y);
+
+            // Vertex 3
+            glColor3f(triangle.v3.r, triangle.v3.g, triangle.v3.b);
+            glVertex2f(triangle.v3.x, triangle.v3.y);
+        }
+        glEnd();
+    } else {
+        std::cout << "No triangles to render, using fallback pixel rendering" << std::endl;
+        // Fallback: render framebuffer pixels if no triangles (for debugging)
+        glBegin(GL_POINTS);
+        for (int y = 0; y < tgp->viewport_height; y++) {
+            for (int x = 0; x < tgp->viewport_width; x++) {
+                int index = y * tgp->viewport_width + x;
+                uint32_t color = tgp->framebuffer[index];
+
+                if (color != 0) { // Only draw non-black pixels
+                    float r = ((color >> 24) & 0xFF) / 255.0f;
+                    float g = ((color >> 16) & 0xFF) / 255.0f;
+                    float b = ((color >> 8) & 0xFF) / 255.0f;
+
+                    glColor3f(r, g, b);
+                    glVertex2i(x, y);
+                }
             }
         }
+        glEnd();
     }
-    glEnd();
+}
+
+// Add some test triangles for debugging and demonstration
+void tgp_add_test_triangles(TGP* tgp) {
+    // Clear existing triangles
+    tgp->triangles.clear();
+
+    // Add a simple colored triangle in the center - make it much larger
+    Triangle tri1;
+    tri1.v1 = {100.0f, 100.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f}; // Red - top left
+    tri1.v2 = {400.0f, 100.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f}; // Green - top right
+    tri1.v3 = {250.0f, 300.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.5f, 1.0f}; // Blue - bottom center
+    tgp->triangles.push_back(tri1);
+
+    // Add another triangle (slightly offset)
+    Triangle tri2;
+    tri2.v1 = {100.0f, 100.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f}; // Yellow
+    tri2.v2 = {150.0f, 100.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f}; // Magenta
+    tri2.v3 = {125.0f, 150.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.5f, 1.0f}; // Cyan
+    tgp->triangles.push_back(tri2);
+
+    // Add a third triangle on the right side
+    Triangle tri3;
+    tri3.v1 = {350.0f, 120.0f, 0.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f}; // Orange
+    tri3.v2 = {420.0f, 120.0f, 0.0f, 0.5f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f}; // Light green
+    tri3.v3 = {385.0f, 200.0f, 0.0f, 0.0f, 0.5f, 1.0f, 1.0f, 0.5f, 1.0f}; // Light blue
+    tgp->triangles.push_back(tri3);
+
+    std::cout << "Added " << tgp->triangles.size() << " test triangles for rendering" << std::endl;
 }

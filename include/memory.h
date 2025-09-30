@@ -2,12 +2,15 @@
 #define MEMORY_H
 
 #include <cstdint>
+#include <string>
+#include <map>
+#include <vector>
 
 // Forward declaration to avoid circular dependency
 struct TGP;
 
 // Let's define a simple memory size for now. 16MB.
-const uint32_t MEMORY_SIZE = 16 * 1024 * 1024;
+const uint32_t MEMORY_SIZE = 64 * 1024 * 1024; // 64MB for Model 2 games
 
 // TGP registers are memory-mapped starting at this address
 const uint32_t TGP_BASE_ADDRESS = 0xC0000000;
@@ -68,8 +71,11 @@ void memory_connect_audio(MemoryBus* bus, void* audio_state);
 // Load a binary file into memory at a specific offset
 bool load_rom_from_file(MemoryBus* bus, const char* filepath, uint32_t offset);
 
-// Load multiple ROM files for a game
-bool load_game_roms(MemoryBus* bus, const GameConfig* config, const char* rom_directory);
+// Extract all files from ZIP archive to memory map
+bool extract_zip_to_memory(const std::string& zip_path, std::map<std::string, std::vector<uint8_t>>& rom_data);
+
+// Load a ROM file from a ZIP archive into memory at a specific offset
+bool load_rom_from_zip(MemoryBus* bus, const char* zip_path, const char* filename, uint32_t offset);
 
 // Find and load a game by name
 bool load_game_by_name(MemoryBus* bus, const char* game_name, const char* rom_directory);

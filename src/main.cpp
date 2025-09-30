@@ -246,7 +246,7 @@ int main(int argc, char* argv[]) {
     if (argc > 1 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)) {
         std::cout << "Usage: PixelModel2 <game_name>" << std::endl;
         std::cout << "Available games:" << std::endl;
-        std::cout << "  vf3     - Virtua Fighter 3 (ROMs ZIP disponibles)" << std::endl;
+        std::cout << "  vf2     - Virtua Fighter 2 (ROMs ZIP disponibles)" << std::endl;
         std::cout << "  daytona - Daytona USA (ROMs ZIP présentes mais incompatibles)" << std::endl;
         std::cout << "ROM loading: Only ZIP files in roms/ folder are supported." << std::endl;
         std::cout << "Note: Daytona ROMs need configuration update to match ZIP contents." << std::endl;
@@ -308,7 +308,7 @@ int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Error: No game specified!" << std::endl;
         std::cerr << "Usage: PixelModel2 <game_name>" << std::endl;
-        std::cerr << "Available games: vf3, daytona" << std::endl;
+        std::cerr << "Available games: vf2, daytona" << std::endl;
         std::cerr << "Use --help for more information." << std::endl;
         memory_destroy(&bus);
         SDL_GL_DestroyContext(glContext);
@@ -319,7 +319,7 @@ int main(int argc, char* argv[]) {
     
     const char* game_name = argv[1];
     
-    if (!load_game_by_name(&bus, game_name, "../../vcop2")) {
+    if (!load_game_by_name(&bus, game_name, "o:\\PERSO\\pixel-model2\\roms\\")) {
         std::cerr << "Failed to load game ROMs!" << std::endl;
         memory_destroy(&bus);
         return -1;
@@ -353,6 +353,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "All initializations completed successfully!" << std::endl;
     std::cout << "Emulator components are working correctly." << std::endl;
+    std::cout << "ROMs loaded, starting emulation..." << std::endl;
 
     // --- Main Loop ---
     bool running = true;
@@ -401,7 +402,8 @@ int main(int argc, char* argv[]) {
         }
 
         // --- Rendering ---
-        glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
+        // std::cout << "Main: Clearing screen with magenta color" << std::endl;
+        glClearColor(0.1f, 0.1f, 0.15f, 1.0f); // Back to original dark blue-gray
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Render TGP framebuffer to screen
@@ -416,6 +418,12 @@ int main(int argc, char* argv[]) {
         frame_count++;
         if (frame_count % 60 == 0) { // Print every second
             std::cout << "Frame " << frame_count << " rendered successfully." << std::endl;
+        }
+        
+        // Exit after 5 frames for debugging
+        if (frame_count >= 5) {
+            std::cout << "Exiting after 5 frames for debugging." << std::endl;
+            running = false;
         }
     }
 
