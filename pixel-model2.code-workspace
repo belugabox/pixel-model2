@@ -11,7 +11,8 @@
 		"files.associations": {
 			"iostream": "cpp",
 			"stdexcept": "cpp",
-			"iomanip": "cpp"
+			"iomanip": "cpp",
+			"fstream": "cpp"
 		},
 		"chat.tools.terminal.autoApprove": {
 			"/.*/": true,
@@ -112,7 +113,8 @@
 			"eval": false,
 			"Invoke-Expression": false,
 			"iex": false
-		}
+		},
+		"chat.agent.maxRequests": 100
 	},
 	"launch": {
 		"version": "0.2.0",

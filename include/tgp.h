@@ -29,7 +29,12 @@ enum TGPCommand {
     CMD_SET_MATRIX = 0x03,
     CMD_PUSH_MATRIX = 0x04,
     CMD_POP_MATRIX = 0x05,
-    CMD_LOAD_IDENTITY = 0x06
+    CMD_LOAD_IDENTITY = 0x06,
+    CMD_MULTIPLY_MATRIX = 0x07,
+    CMD_TRANSLATE = 0x08,
+    CMD_ROTATE_X = 0x09,
+    CMD_ROTATE_Y = 0x0A,
+    CMD_ROTATE_Z = 0x0B
 };
 
 struct TGP {
@@ -79,7 +84,17 @@ void tgp_process_command(TGP* tgp, uint32_t command);
 // Basic rendering functions
 void tgp_clear_framebuffer(TGP* tgp);
 void tgp_draw_triangle(TGP* tgp, uint32_t vertex_addr);
+void tgp_draw_triangles(TGP* tgp);
 void tgp_set_matrix(TGP* tgp, uint32_t matrix_addr);
+void tgp_load_matrix_from_memory(TGP* tgp);
+void tgp_push_matrix(TGP* tgp);
+void tgp_pop_matrix(TGP* tgp);
+void tgp_load_identity(TGP* tgp);
+void tgp_multiply_matrix(TGP* tgp);
+void tgp_translate_matrix(TGP* tgp);
+void tgp_rotate_matrix_x(TGP* tgp);
+void tgp_rotate_matrix_y(TGP* tgp);
+void tgp_rotate_matrix_z(TGP* tgp);
 
 // 3D rendering pipeline functions
 void tgp_render_triangle(TGP* tgp, const Triangle& triangle);
@@ -99,5 +114,9 @@ void tgp_matrix_rotate_z(float matrix[16], float angle);
 
 // OpenGL rendering functions
 void tgp_render_to_opengl(TGP* tgp);
+
+// Utility functions for vertex transformation and rasterization
+void tgp_transform_vertex(Vertex* v, const float matrix[16]);
+void tgp_rasterize_triangle(TGP* tgp, const Vertex& v1, const Vertex& v2, const Vertex& v3);
 
 #endif // TGP_H

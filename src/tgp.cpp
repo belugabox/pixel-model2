@@ -75,27 +75,47 @@ void tgp_execute_command(TGP* tgp) {
     switch (command) {
         case CMD_CLEAR:
             std::cout << "TGP: Executing CLEAR command" << std::endl;
-            // Clear screen/framebuffer
+            tgp_clear_framebuffer(tgp);
             break;
         case CMD_DRAW_TRIANGLE:
             std::cout << "TGP: Executing DRAW_TRIANGLE command" << std::endl;
-            // Draw triangle using vertex and index buffers
+            tgp_draw_triangles(tgp);
             break;
         case CMD_SET_MATRIX:
             std::cout << "TGP: Executing SET_MATRIX command" << std::endl;
-            // Set transformation matrix
+            tgp_load_matrix_from_memory(tgp);
             break;
         case CMD_PUSH_MATRIX:
             std::cout << "TGP: Executing PUSH_MATRIX command" << std::endl;
-            // Push matrix to stack
+            tgp_push_matrix(tgp);
             break;
         case CMD_POP_MATRIX:
             std::cout << "TGP: Executing POP_MATRIX command" << std::endl;
-            // Pop matrix from stack
+            tgp_pop_matrix(tgp);
             break;
         case CMD_LOAD_IDENTITY:
             std::cout << "TGP: Executing LOAD_IDENTITY command" << std::endl;
-            // Load identity matrix
+            tgp_matrix_identity(tgp->current_matrix);
+            break;
+        case CMD_MULTIPLY_MATRIX:
+            std::cout << "TGP: Executing MULTIPLY_MATRIX command" << std::endl;
+            tgp_multiply_matrix(tgp);
+            break;
+        case CMD_TRANSLATE:
+            std::cout << "TGP: Executing TRANSLATE command" << std::endl;
+            tgp_translate_matrix(tgp);
+            break;
+        case CMD_ROTATE_X:
+            std::cout << "TGP: Executing ROTATE_X command" << std::endl;
+            tgp_rotate_matrix_x(tgp);
+            break;
+        case CMD_ROTATE_Y:
+            std::cout << "TGP: Executing ROTATE_Y command" << std::endl;
+            tgp_rotate_matrix_y(tgp);
+            break;
+        case CMD_ROTATE_Z:
+            std::cout << "TGP: Executing ROTATE_Z command" << std::endl;
+            tgp_rotate_matrix_z(tgp);
             break;
         default:
             std::cout << "TGP: Unknown command 0x" << std::hex << command << std::endl;
@@ -148,50 +168,177 @@ void tgp_write_register(TGP* tgp, uint32_t offset, uint32_t value) {
 }
 
 void tgp_process_command(TGP* tgp, uint32_t command) {
+    // This function is called when a command is written to the control register
     tgp->current_command = command;
-
-    // Decode command (simplified)
-    uint32_t cmd_type = command & 0xFF;
-    uint32_t param = command >> 8;
-
-    switch (cmd_type) {
-        case CMD_CLEAR: // Clear framebuffer
-            tgp_clear_framebuffer(tgp);
-            break;
-        case CMD_DRAW_TRIANGLE: // Draw triangle
-            tgp_draw_triangle(tgp, param);
-            break;
-        case CMD_SET_MATRIX: // Set matrix
-            tgp_set_matrix(tgp, param);
-            break;
-        case CMD_PUSH_MATRIX: // Push matrix
-            if (tgp->matrix_sp < 31) {
-                memcpy(&tgp->matrix_stack[tgp->matrix_sp * 16], tgp->current_matrix, sizeof(float) * 16);
-                tgp->matrix_sp++;
-            }
-            break;
-        case CMD_POP_MATRIX: // Pop matrix
-            if (tgp->matrix_sp > 0) {
-                tgp->matrix_sp--;
-                memcpy(tgp->current_matrix, &tgp->matrix_stack[tgp->matrix_sp * 16], sizeof(float) * 16);
-            }
-            break;
-        case CMD_LOAD_IDENTITY: // Load identity matrix
-            tgp_matrix_identity(tgp->current_matrix);
-            break;
-        default:
-            std::cout << "TGP: Unknown command 0x" << std::hex << cmd_type << std::endl;
-            break;
-    }
+    tgp_execute_command(tgp);
 }
 
+// New 3D Pipeline Functions
+
 void tgp_clear_framebuffer(TGP* tgp) {
-    std::cout << "TGP: Clearing framebuffer" << std::endl;
     memset(tgp->framebuffer, 0, sizeof(tgp->framebuffer));
     for (int i = 0; i < 496 * 384; i++) {
         tgp->depth_buffer[i] = 1.0f; // Far plane
     }
+    std::cout << "TGP: Framebuffer cleared" << std::endl;
 }
+
+void tgp_load_matrix_from_memory(TGP* tgp) {
+    // Load 4x4 matrix from memory address stored in vertex_buffer_addr
+    uint32_t addr = tgp->vertex_buffer_addr;
+    for (int i = 0; i < 16; i++) {
+        uint32_t value = memory_read_dword(tgp->bus, addr + i * 4);
+        tgp->current_matrix[i] = *(float*)&value; // Convert uint32_t to float
+    }
+    std::cout << "TGP: Matrix loaded from memory address 0x" << std::hex << addr << std::endl;
+}
+
+void tgp_push_matrix(TGP* tgp) {
+    if (tgp->matrix_sp < 32) {
+        memcpy(&tgp->matrix_stack[tgp->matrix_sp * 16], tgp->current_matrix, sizeof(float) * 16);
+        tgp->matrix_sp++;
+        std::cout << "TGP: Matrix pushed to stack (SP=" << tgp->matrix_sp << ")" << std::endl;
+    } else {
+        std::cout << "TGP: Matrix stack overflow!" << std::endl;
+    }
+}
+
+void tgp_pop_matrix(TGP* tgp) {
+    if (tgp->matrix_sp > 0) {
+        tgp->matrix_sp--;
+        memcpy(tgp->current_matrix, &tgp->matrix_stack[tgp->matrix_sp * 16], sizeof(float) * 16);
+        std::cout << "TGP: Matrix popped from stack (SP=" << tgp->matrix_sp << ")" << std::endl;
+    } else {
+        std::cout << "TGP: Matrix stack underflow!" << std::endl;
+    }
+}
+
+void tgp_multiply_matrix(TGP* tgp) {
+    float temp[16];
+    memcpy(temp, tgp->current_matrix, sizeof(float) * 16);
+    tgp_matrix_multiply(tgp->current_matrix, temp, tgp->modelview_matrix);
+    std::cout << "TGP: Matrix multiplied with modelview" << std::endl;
+}
+
+void tgp_translate_matrix(TGP* tgp) {
+    // Get translation parameters from index_buffer_addr (x, y, z)
+    uint32_t addr = tgp->index_buffer_addr;
+    uint32_t x_bits = memory_read_dword(tgp->bus, addr);
+    uint32_t y_bits = memory_read_dword(tgp->bus, addr + 4);
+    uint32_t z_bits = memory_read_dword(tgp->bus, addr + 8);
+    
+    float x = *(float*)&x_bits;
+    float y = *(float*)&y_bits;
+    float z = *(float*)&z_bits;
+    
+    tgp_matrix_translate(tgp->current_matrix, x, y, z);
+    std::cout << "TGP: Matrix translated by (" << x << ", " << y << ", " << z << ")" << std::endl;
+}
+
+void tgp_rotate_matrix_x(TGP* tgp) {
+    uint32_t addr = tgp->index_buffer_addr;
+    uint32_t angle_bits = memory_read_dword(tgp->bus, addr);
+    float angle = *(float*)&angle_bits;
+    
+    tgp_matrix_rotate_x(tgp->current_matrix, angle);
+    std::cout << "TGP: Matrix rotated X by " << angle << " radians" << std::endl;
+}
+
+void tgp_rotate_matrix_y(TGP* tgp) {
+    uint32_t addr = tgp->index_buffer_addr;
+    uint32_t angle_bits = memory_read_dword(tgp->bus, addr);
+    float angle = *(float*)&angle_bits;
+    
+    tgp_matrix_rotate_y(tgp->current_matrix, angle);
+    std::cout << "TGP: Matrix rotated Y by " << angle << " radians" << std::endl;
+}
+
+void tgp_rotate_matrix_z(TGP* tgp) {
+    uint32_t addr = tgp->index_buffer_addr;
+    uint32_t angle_bits = memory_read_dword(tgp->bus, addr);
+    float angle = *(float*)&angle_bits;
+    
+    tgp_matrix_rotate_z(tgp->current_matrix, angle);
+    std::cout << "TGP: Matrix rotated Z by " << angle << " radians" << std::endl;
+}
+
+void tgp_draw_triangles(TGP* tgp) {
+    // Simplified triangle drawing - in a real implementation this would be much more complex
+    // For now, just draw some test triangles to demonstrate the 3D pipeline
+    
+    // Create a simple test triangle
+    Vertex v1 = {100.0f, 100.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f};
+    Vertex v2 = {200.0f, 100.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f};
+    Vertex v3 = {150.0f, 200.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.5f, 1.0f};
+    
+    // Transform vertices (simplified - just apply current matrix)
+    tgp_transform_vertex(&v1, tgp->current_matrix);
+    tgp_transform_vertex(&v2, tgp->current_matrix);
+    tgp_transform_vertex(&v3, tgp->current_matrix);
+    
+    // Draw the triangle to framebuffer
+    tgp_rasterize_triangle(tgp, v1, v2, v3);
+    
+    std::cout << "TGP: Test triangle drawn" << std::endl;
+}
+
+void tgp_transform_vertex(Vertex* v, const float matrix[16]) {
+    // Apply 4x4 transformation matrix to vertex position
+    float x = v->x * matrix[0] + v->y * matrix[4] + v->z * matrix[8] + matrix[12];
+    float y = v->x * matrix[1] + v->y * matrix[5] + v->z * matrix[9] + matrix[13];
+    float z = v->x * matrix[2] + v->y * matrix[6] + v->z * matrix[10] + matrix[14];
+    float w = v->x * matrix[3] + v->y * matrix[7] + v->z * matrix[11] + matrix[15];
+    
+    // Perspective divide
+    if (w != 0.0f) {
+        v->x = x / w;
+        v->y = y / w;
+        v->z = z / w;
+    }
+}
+
+void tgp_rasterize_triangle(TGP* tgp, const Vertex& v1, const Vertex& v2, const Vertex& v3) {
+    // Very basic triangle rasterization - just fill with solid color for now
+    // In a real implementation, this would include proper interpolation, clipping, etc.
+    
+    // Convert to screen coordinates (simple orthographic projection)
+    int x1 = (int)(v1.x + tgp->viewport_width / 2);
+    int y1 = (int)(v1.y + tgp->viewport_height / 2);
+    int x2 = (int)(v2.x + tgp->viewport_width / 2);
+    int y2 = (int)(v2.y + tgp->viewport_height / 2);
+    int x3 = (int)(v3.x + tgp->viewport_width / 2);
+    int y3 = (int)(v3.y + tgp->viewport_height / 2);
+    
+    // Simple bounding box fill (very inefficient but works for demonstration)
+    int min_x = std::min({x1, x2, x3});
+    int max_x = std::max({x1, x2, x3});
+    int min_y = std::min({y1, y2, y3});
+    int max_y = std::max({y1, y2, y3});
+    
+    // Clamp to viewport
+    min_x = std::max(0, min_x);
+    max_x = std::min((int)tgp->viewport_width - 1, max_x);
+    min_y = std::max(0, min_y);
+    max_y = std::min((int)tgp->viewport_height - 1, max_y);
+    
+    // Fill bounding box with average color
+    uint8_t r = (uint8_t)((v1.r + v2.r + v3.r) / 3.0f * 255.0f);
+    uint8_t g = (uint8_t)((v1.g + v2.g + v3.g) / 3.0f * 255.0f);
+    uint8_t b = (uint8_t)((v1.b + v2.b + v3.b) / 3.0f * 255.0f);
+    uint8_t a = (uint8_t)((v1.a + v2.a + v3.a) / 3.0f * 255.0f);
+    uint32_t color = (r << 24) | (g << 16) | (b << 8) | a;
+    
+    for (int y = min_y; y <= max_y; y++) {
+        for (int x = min_x; x <= max_x; x++) {
+            int index = y * tgp->viewport_width + x;
+            tgp->framebuffer[index] = color;
+        }
+    }
+}
+
+
+
+// Matrix Operations
 
 void tgp_draw_triangle(TGP* tgp, uint32_t vertex_addr) {
     std::cout << "TGP: Drawing triangle from vertices at 0x" << std::hex << vertex_addr << std::endl;

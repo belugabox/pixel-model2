@@ -25,6 +25,9 @@ struct i960_cpu {
     // --- Special Registers ---
     uint32_t sp; // Stack Pointer
 
+    // --- CPU State ---
+    bool halted; // True when CPU is halted and should not execute further
+
     // --- Interrupt System ---
     bool interrupt_mode;        // True when processing an interrupt
     uint32_t interrupt_stack[32]; // Stack for interrupt context (IP, flags, etc.)
