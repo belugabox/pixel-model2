@@ -8,8 +8,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Prefer GLVND over legacy OpenGL
 set(OpenGL_GL_PREFERENCE GLVND)
 
-# Find OpenGL (required for graphics)
-find_package(OpenGL REQUIRED)
+# Find OpenGL (optional - most platforms have it)
+find_package(OpenGL QUIET)
+
+if(OPENGL_FOUND)
+    message(STATUS "OpenGL found - building with graphics support")
+else()
+    message(STATUS "OpenGL not found - attempting to build anyway (may fail on some targets)")
+endif()
 
 # SDL3 is optional - only required for the main PixelModel2 executable
 find_package(SDL3 QUIET)
@@ -125,39 +131,38 @@ add_executable(PixelModel2TGP3DTest
 if(SDL3_FOUND)
     target_link_libraries(PixelModel2 PRIVATE 
         SDL3::SDL3
-        OpenGL::GL
     )
+    if(OPENGL_FOUND)
+        target_link_libraries(PixelModel2 PRIVATE OpenGL::GL)
+    elseif(WIN32)
+        target_link_libraries(PixelModel2 PRIVATE opengl32)
+    endif()
     target_link_libraries(PixelModel2 PRIVATE third_party_miniz)
 endif()
 
-target_link_libraries(PixelModel2Test PRIVATE 
-    OpenGL::GL
-)
+# Link OpenGL for test executables
+if(OPENGL_FOUND)
+    target_link_libraries(PixelModel2Test PRIVATE OpenGL::GL)
+    target_link_libraries(PixelModel2LogicalTest PRIVATE OpenGL::GL)
+    target_link_libraries(PixelModel2InterruptTest PRIVATE OpenGL::GL)
+    target_link_libraries(PixelModel2TGPTest PRIVATE OpenGL::GL)
+    target_link_libraries(PixelModel2TGP3DTest PRIVATE OpenGL::GL)
+    target_link_libraries(PixelModel2Minimal PRIVATE OpenGL::GL)
+elseif(WIN32)
+    # On Windows, fall back to opengl32
+    target_link_libraries(PixelModel2Test PRIVATE opengl32)
+    target_link_libraries(PixelModel2LogicalTest PRIVATE opengl32)
+    target_link_libraries(PixelModel2InterruptTest PRIVATE opengl32)
+    target_link_libraries(PixelModel2TGPTest PRIVATE opengl32)
+    target_link_libraries(PixelModel2TGP3DTest PRIVATE opengl32)
+    target_link_libraries(PixelModel2Minimal PRIVATE opengl32)
+endif()
+
 target_link_libraries(PixelModel2Test PRIVATE third_party_miniz)
-
-target_link_libraries(PixelModel2LogicalTest PRIVATE 
-    OpenGL::GL
-)
 target_link_libraries(PixelModel2LogicalTest PRIVATE third_party_miniz)
-
-target_link_libraries(PixelModel2InterruptTest PRIVATE 
-    OpenGL::GL
-)
 target_link_libraries(PixelModel2InterruptTest PRIVATE third_party_miniz)
-
-target_link_libraries(PixelModel2TGPTest PRIVATE 
-    OpenGL::GL
-)
 target_link_libraries(PixelModel2TGPTest PRIVATE third_party_miniz)
-
-target_link_libraries(PixelModel2TGP3DTest PRIVATE 
-    OpenGL::GL
-)
 target_link_libraries(PixelModel2TGP3DTest PRIVATE third_party_miniz)
-
-target_link_libraries(PixelModel2Minimal PRIVATE 
-    OpenGL::GL
-)
 target_link_libraries(PixelModel2Minimal PRIVATE third_party_miniz)
 
 # --- Include Directories ---
