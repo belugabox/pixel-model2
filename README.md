@@ -124,17 +124,26 @@ The emulator supports standard USB game controllers with button mapping for:
 
 ```
 pixel-model2/
-├── src/               # Source files
-│   ├── main.cpp       # Main emulator with SDL3
-│   ├── i960.cpp       # Intel i960 CPU emulation
-│   ├── memory.cpp     # Memory bus and ROM loading
-│   ├── tgp.cpp        # TGP GPU emulation
-│   └── test_*.cpp     # Various test files
+├── src/
+│   ├── core/          # Core emulation components
+│   │   ├── i960.cpp   # Intel i960 CPU emulation
+│   │   ├── memory.cpp # Memory bus and ROM loading
+│   │   ├── tgp.cpp    # TGP GPU emulation
+│   │   └── tgp_stub.cpp # TGP stub for testing
+│   └── main/          # Main executables
+│       ├── main.cpp   # Main emulator with SDL3
+│       └── main_minimal.cpp # Minimal emulator without graphics
+├── tests/             # Test files
+│   ├── test_*.cpp     # Unit tests
+│   └── main_test_*.cpp # Integration tests
 ├── include/           # Header files
 │   ├── i960.h
 │   ├── memory.h
 │   └── tgp.h
-├── miniz-3.1.0/       # ZIP compression library
+├── third_party/       # External dependencies
+│   ├── miniz-3.1.0/   # ZIP compression library
+│   └── SDL3/          # SDL3 library (optional)
+├── docs/              # Documentation
 ├── CMakeLists.txt     # Build configuration
 └── README.md          # This file
 ```
@@ -202,7 +211,7 @@ The project includes several test executables for validating different component
 
 To add support for a new SEGA Model 2 game:
 
-1. Add ROM configuration in `src/memory.cpp`
+1. Add ROM configuration in `src/core/memory.cpp`
 2. Define the ROM files and their memory offsets
 3. Add the game to the `available_games` array
 4. Place the game's ZIP file in the `roms/` directory
