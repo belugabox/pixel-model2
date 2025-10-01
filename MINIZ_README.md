@@ -4,16 +4,16 @@ Ce dépôt contient une copie vendorisée de miniz (version 3.1.0) utilisée pou
 
 ## Emplacement
 
-- **Implementation C**: `miniz-3.1.0/miniz.c`
-- **Headers publics**: `miniz-3.1.0/miniz.h` (ajouté à l'include path via CMake)
+- **Implementation C**: `third_party/miniz-3.1.0/miniz.c`
+- **Headers publics**: `third_party/miniz-3.1.0/miniz.h` (ajouté à l'include path via CMake)
 - Le CMake ajoute une librairie statique `third_party_miniz` compilant `miniz.c`.
 
-**Note**: Les fichiers dupliqués dans `include/` et `third_party/` ont été supprimés pour maintenir une seule source de vérité dans `miniz-3.1.0/`.
+**Note**: Les fichiers dupliqués dans `include/` et ailleurs ont été supprimés pour maintenir une seule source de vérité dans `third_party/miniz-3.1.0/`.
 
 ## Structure nettoyée
 
 ```
-miniz-3.1.0/
+third_party/miniz-3.1.0/
 ├── miniz.c          # Implementation complète
 ├── miniz.h          # Header public
 ├── ChangeLog.md     # Historique des versions
@@ -26,7 +26,7 @@ Les exemples (`examples/`) ont été supprimés car ils ne sont pas nécessaires
 ## Usage
 
 - Le code utilise les APIs `mz_zip_reader_*` pour lire un fichier ZIP en mémoire et extraire ses entrées.
-- Exemple: `extract_zip_to_memory(const std::string&, std::map<std::string, std::vector<uint8_t>>&)` dans `src/memory.cpp`.
+- Exemple: `extract_zip_to_memory(const std::string&, std::map<std::string, std::vector<uint8_t>>&)` dans `src/core/memory.cpp`.
 - Include simple: `#include "miniz.h"` (le path est configuré dans CMakeLists.txt)
 
 ## Lancer le test ZIP
